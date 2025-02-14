@@ -2,10 +2,9 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
-
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
+use std::cmp::PartialOrd;
 use std::vec::*;
 
 #[derive(Debug)]
@@ -29,13 +28,13 @@ struct LinkedList<T> {
     end: Option<NonNull<Node<T>>>,
 }
 
-impl<T> Default for LinkedList<T> {
+impl<T: PartialOrd> Default for LinkedList<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T> LinkedList<T> {
+impl<T: PartialOrd> LinkedList<T> {
     pub fn new() -> Self {
         Self {
             length: 0,
@@ -48,6 +47,16 @@ impl<T> LinkedList<T> {
         let mut node = Box::new(Node::new(obj));
         node.next = None;
         let node_ptr = Some(unsafe { NonNull::new_unchecked(Box::into_raw(node)) });
+        match self.end {
+            None => self.start = node_ptr,
+            Some(end_ptr) => unsafe { (*end_ptr.as_ptr()).next = node_ptr },
+        }
+        self.end = node_ptr;
+        self.length += 1;
+    }
+
+    pub fn add_node_ptr(&mut self, node_ptr: Option<NonNull<Node<T>>>) {
+        assert_ne!(node_ptr, None);
         match self.end {
             None => self.start = node_ptr,
             Some(end_ptr) => unsafe { (*end_ptr.as_ptr()).next = node_ptr },
@@ -69,14 +78,40 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+
+    fn pop_head(&mut self) -> Option<NonNull<Node<T>>> {
+        match self.start {
+            None => None,
+            Some(next_ptr) => {
+                self.start = unsafe { (*next_ptr.as_ptr()).next };
+                if self.start.is_none() {
+                    self.end = None;
+                }
+                self.length -= 1;
+                Some(next_ptr)
+            }
         }
+    }
+
+	pub fn merge(mut list_a: LinkedList<T>, mut list_b: LinkedList<T>) -> Self
+	{
+        let mut ret = Self::new();
+        while list_a.length > 0 && list_b.length > 0 {
+            let val_a = list_a.get(0).unwrap();
+            let val_b = list_b.get(0).unwrap();
+            if val_a < val_b {
+                ret.add_node_ptr(list_a.pop_head());
+            } else {
+                ret.add_node_ptr(list_b.pop_head());
+            }
+        }
+        while list_a.length > 0 {
+            ret.add_node_ptr(list_a.pop_head());
+        }
+        while list_b.length > 0 {
+            ret.add_node_ptr(list_b.pop_head());
+        }
+        ret
 	}
 }
 
