@@ -2,10 +2,9 @@
 	heap
 	This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
-
 use std::cmp::Ord;
 use std::default::Default;
+use std::mem::{replace, swap};
 
 pub struct Heap<T>
 where
@@ -37,7 +36,23 @@ where
     }
 
     pub fn add(&mut self, value: T) {
-        //TODO
+        self.count += 1;
+        if self.count < self.items.len() {
+            self.items[self.count] = value;
+        } else {
+            self.items.push(value);
+        }
+
+        let mut i = self.count;
+        while i > 1 {
+            let par = self.parent_idx(i);
+            if (self.comparator)(&self.items[i], &self.items[par]) {
+                self.items.swap(i, par);
+                i = par;
+            } else {
+                break;
+            }
+        }
     }
 
     fn parent_idx(&self, idx: usize) -> usize {
@@ -57,8 +72,13 @@ where
     }
 
     fn smallest_child_idx(&self, idx: usize) -> usize {
-        //TODO
-		0
+        let l = self.left_child_idx(idx);
+        let r = self.right_child_idx(idx);
+        if r <= self.count && (self.comparator)(&self.items[r], &self.items[l]) {
+            r
+        } else {
+            l
+        }
     }
 }
 
@@ -84,8 +104,29 @@ where
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
-        //TODO
-		None
+        if self.count == 0 {
+            return None;
+        }
+        // let ret = self.items[1];
+        // self.items[1] = T::default();
+        // 注意，Vec 或者数组内部元素的所有权不能被（部分）转移出去
+        // 比如一个长度为 10 的 Vec a，假如令 a[2] = a[5]，会报错无法编译
+        // 除非元素实现了 Copy trait，那也意味着发生了复制
+        let ret = std::mem::replace(&mut self.items[1], T::default());
+        self.items.swap(1, self.count);
+        self.count -= 1;
+
+        let mut i = 1;
+        while self.left_child_idx(i) <= self.count {
+            let next = self.smallest_child_idx(i);
+            if (self.comparator)(&self.items[next], &self.items[i]) {
+                self.items.swap(i, next);
+                i = next;
+            } else {
+                break;
+            }
+        }
+        Some(ret)
     }
 }
 

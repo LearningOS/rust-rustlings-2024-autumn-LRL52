@@ -2,8 +2,6 @@
 	graph
 	This problem requires you to implement a basic graph functio
 */
-// I AM NOT DONE
-
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 #[derive(Debug, Clone)]
@@ -16,6 +14,18 @@ impl fmt::Display for NodeNotInGraph {
 pub struct UndirectedGraph {
     adjacency_table: HashMap<String, Vec<(String, i32)>>,
 }
+
+// 关于 specialized trait 如何调用 trait 同名函数的默认实现
+// 这在目前的 Rust 中应该是不可能的
+// 解决办法可以参考：https://stackoverflow.com/questions/31461902/is-it-possible-to-extend-a-default-method-implementation-of-a-trait-in-a-struct
+impl UndirectedGraph {
+    fn add_edge(&mut self, edge: (&str, &str, i32)) {
+        let (from, to, weight) = edge;
+        Graph::add_edge(self, (from, to, weight));
+        Graph::add_edge(self, (to, from, weight));
+    }
+}
+
 impl Graph for UndirectedGraph {
     fn new() -> UndirectedGraph {
         UndirectedGraph {
@@ -28,20 +38,24 @@ impl Graph for UndirectedGraph {
     fn adjacency_table(&self) -> &HashMap<String, Vec<(String, i32)>> {
         &self.adjacency_table
     }
-    fn add_edge(&mut self, edge: (&str, &str, i32)) {
-        //TODO
-    }
 }
 pub trait Graph {
     fn new() -> Self;
     fn adjacency_table_mutable(&mut self) -> &mut HashMap<String, Vec<(String, i32)>>;
     fn adjacency_table(&self) -> &HashMap<String, Vec<(String, i32)>>;
     fn add_node(&mut self, node: &str) -> bool {
-        //TODO
-		true
+        let adj = self.adjacency_table_mutable();
+        if adj.get(node).is_none() {
+            adj.insert(node.into(), Vec::new());
+            return true;
+        }
+        false
     }
     fn add_edge(&mut self, edge: (&str, &str, i32)) {
-        //TODO
+        self.add_node(edge.0);
+        let adj = self.adjacency_table_mutable();
+        let v = adj.get_mut(edge.0).unwrap();
+        v.push((edge.1.into(), edge.2));
     }
     fn contains(&self, node: &str) -> bool {
         self.adjacency_table().get(node).is_some()
